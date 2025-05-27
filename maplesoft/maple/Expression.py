@@ -147,6 +147,10 @@ class Expression(collections.abc.Callable,collections.abc.Hashable,collections.a
     def __hash__(self):
         return int( self.expr )
 
+    # Garbage collection
+    def __del__(self):
+        self.session._maplec.MapleGcAllow( self.session._kv, self.expr )
+
     # Sized interface
     def __len__(self):
         return self.session._eval_procedure( 'length', self )

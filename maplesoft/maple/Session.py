@@ -1,4 +1,5 @@
 from maplesoft.maple.Expression import ComplexNumeric,Expression,ExpressionSequence,Indexable,List,Name,RealNumeric,RTable,Set,Table
+from maplesoft.maple.importfrom import importfrom
 
 import maplesoft.maple.maplec_ctypes as maplec_ctypes
 
@@ -166,7 +167,7 @@ class Session:
             return self._maplec.IsMapleComplex64( self._kv, expr )
         elif(typ == 'finite'): 
             return self._maplec.IsMapleComplexNumeric( self._kv, expr )
-        elif(typ == 'float' or type == 'float[8]'):  
+        elif(typ == 'float' or typ == 'float[8]' or typ == 'double'):  
             return self._maplec.IsMapleFloat64( self._kv, expr )
         elif(typ == 'fraction'): 
             return isinstance(expr, fractions.Fraction)
@@ -228,16 +229,20 @@ class Session:
 
     def _wrap(self, expr):
         """Convert a raw Maple ALGEB to a wrapped Expression or Python object."""
+        self._maplec.MapleGcProtect( self._kv, expr )
         if( self._maplec.IsMapleNumeric( self._kv, expr ) ):
             # Autoconvert exact quantities (integers and fractions)
             if self._maplec.IsMapleInteger64( self._kv, expr ):
+                self._maplec.MapleGcAllow( self._kv, expr )
                 return self._maplec.MapleToInteger64( self._kv, expr )
             elif self._maplec.IsMapleInteger( self._kv, expr ):
                 res = self._maplec.MapleALGEB_SPrintf1( self._kv, b'%d', expr )
+                self._maplec.MapleGcAllow( self._kv, expr )
                 return int( self._maplec.MapleToString( self._kv, res ) )
             elif self._maplec.IsMapleFraction( self._kv, expr ):
                 u = self._maplec.EvalMapleProcedure( self._kv, self._eval_name('numer',wrap=False), expr )
                 v = self._maplec.EvalMapleProcedure( self._kv, self._eval_name('denom',wrap=False), expr )
+                self._maplec.MapleGcAllow( self._kv, expr )
                 return fractions.Fraction( self._wrap(u), self._wrap(v) )
             return RealNumeric( self, expr )
         elif( self._maplec.IsMapleComplexNumeric( self._kv, expr ) ):
@@ -245,6 +250,7 @@ class Session:
         elif( self._maplec.IsMapleString( self._kv, expr ) ):
             # Autoconvert strings
             res = self._maplec.MapleToString( self._kv, expr )
+            self._maplec.MapleGcAllow( self._kv, expr )
             return res.decode('utf-8')
         elif( self._maplec.IsMapleRTable( self._kv, expr ) ):
             return RTable( self, expr )
@@ -260,10 +266,13 @@ class Session:
             res = self._maplec.MapleToString( self._kv, expr )
             # Autoconvert booleans
             if(res == b'true'):
+                self._maplec.MapleGcAllow( self._kv, expr )
                 return True
             elif(res == b'false'):
+                self._maplec.MapleGcAllow( self._kv, expr )
                 return False
             elif(res == b'None'):
+                self._maplec.MapleGcAllow( self._kv, expr )
                 return None
             return Name( self, expr )
         else:
@@ -345,4 +354,4 @@ class Session:
 
         else: 
             # try importing from other data as a last ditch
-            return maple.importfrom.convert( self, a )
+            return importfrom.convert( self, a )

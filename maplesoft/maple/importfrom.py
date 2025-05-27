@@ -28,7 +28,8 @@ class importfrom:
             elif(dtyp == numpy.dtype('int8')):
                 typ=sess._eval_name( 'integer[1]', symbol=False )
             elif(dtyp == numpy.dtype('float64')):
-                typ=sess._eval_name( 'float[8]', symbol=False )
+                #typ=sess._eval_name( 'float[8]', symbol=False )
+                typ=sess._eval_name( 'double' )
             elif(dtyp == numpy.dtype('float32')):
                 typ=sess._eval_name( 'float[4]', symbol=False )
             else:
